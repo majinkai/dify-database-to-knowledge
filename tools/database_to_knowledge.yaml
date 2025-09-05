@@ -24,6 +24,9 @@ parameters:
           en_US: Oracle
         value: oracle
       - label:
+          en_US: Oracle11g
+        value: oracle11g
+      - label:
           en_US: Microsoft SQL Server
         value: mssql
       - label:

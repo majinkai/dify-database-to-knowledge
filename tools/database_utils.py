@@ -1,5 +1,6 @@
 import re
 
+import oracledb
 from urllib.parse import parse_qsl
 from sqlalchemy import create_engine, inspect, URL, text
 from typing import Dict
@@ -18,7 +19,17 @@ def _build_db_url(db_type: str, host: str, port: int, username: str, password: s
         'postgresql': 'psycopg2'
     }
 
-    return URL.create(
+    if db_type == "oracle11g":
+        return URL.create(
+        f"oracle+{drivers['oracle']}",
+        username=username,
+        password=password,
+        host=host,
+        port=port,
+        database=database,
+        query=dict(parse_qsl(properties)) if properties else None
+    )
+    else : return URL.create(
         f"{db_type}+{drivers[db_type]}",
         username=username,
         password=password,
@@ -28,8 +39,13 @@ def _build_db_url(db_type: str, host: str, port: int, username: str, password: s
         query=dict(parse_qsl(properties)) if properties else None
     )
 
+    
+
 class DBSchemaExtractor:
     def __init__(self, db_type: str, host: str, port: int, username: str, password: str, database: str, properties: str):
+        if db_type == 'oracle11g':
+            # To change from the default python-oracledb Thin mode to Thick mode
+            oracledb.init_oracle_client()
         db_url = _build_db_url(db_type, host, port, username, password, database, properties)
         self.engine = create_engine(db_url)
         self.inspector = inspect(self.engine)
@@ -50,15 +66,15 @@ class DBSchemaExtractor:
         target_tables = all_table_names
         if table_names:
             target_tables = [table.strip() for table in table_names.split(',')]
-            target_tables = [table for table in target_tables if table in all_table_names]
-
+            name_map = {name.lower(): name for name in all_table_names}
+            target_tables = [name_map[table.lower()] for table in target_tables if table.lower() in name_map]
         for table in target_tables:
             schemas[table] = self._get_table_schema(table)
 
         return schemas
 
     def _get_table_schema(self, table_name: str) -> Dict:
-        if self.db_type == "oracle":
+        if self.db_type == "oracle" or self.db_type == "oracle11g":
             return self._get_oracle_table_schema(table_name)
         elif self.db_type == "doris":
             return self._get_doris_table_schema(table_name)
