@@ -78,7 +78,7 @@ class DBSchemaExtractor:
         if self.db_type == "mysql":
             query = f"SELECT table_comment FROM information_schema.tables WHERE table_name = '{table_name}';"
         elif self.db_type == "postgresql":
-            query = f"SELECT obj_description('{table_name}'::regclass, 'pg_class');"
+            query = f"SELECT obj_description('\"{table_name}\"'::regclass, 'pg_class');"
         elif self.db_type == "mssql":
             query = f"SELECT cast(EP.value as nvarchar(500)) FROM sys.tables T INNER JOIN sys.extended_properties EP ON T.object_id = EP.major_id WHERE T.name = '{table_name}' AND EP.minor_id = 0;"
         elif self.db_type == "doris":
